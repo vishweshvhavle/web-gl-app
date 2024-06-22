@@ -1,8 +1,7 @@
 {
   "hosting": {
-    "public": "public",
+    "public": "templates", 
     "ignore": [
-      "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
@@ -12,18 +11,5 @@
         "function": "app"
       }
     ]
-  },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "venv",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.local"
-      ]
-    }
-  ]
+  }
 }
