@@ -1,10 +1,10 @@
-let scene, camera, renderer, spaceship, planet, asteroids = [];
+let scene, camera, renderer, spaceship, planet, asteroids = [], stars = [];
 let gameOver = false;
 
 function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
@@ -17,35 +17,70 @@ function init() {
     directionalLight.position.set(5, 3, 5);
     scene.add(directionalLight);
 
-    // Background
-    const loader = new THREE.TextureLoader();
-    const texture = loader.load('/api/placeholder/2048/1024');
-    scene.background = texture;
+    // Stars background
+    const starGeometry = new THREE.BufferGeometry();
+    const starMaterial = new THREE.PointsMaterial({
+        color: 0xFFFFFF,
+        size: 0.1,
+        transparent: true
+    });
+
+    const starVertices = [];
+    for (let i = 0; i < 10000; i++) {
+        const x = (Math.random() - 0.5) * 2000;
+        const y = (Math.random() - 0.5) * 2000;
+        const z = -Math.random() * 2000;
+        starVertices.push(x, y, z);
+    }
+
+    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+    stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
 
     // Spaceship (player)
     const spaceshipGeometry = new THREE.ConeGeometry(0.5, 2, 32);
-    const spaceshipMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+    const spaceshipMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x00ff00,
+        emissive: 0x00ff00,
+        emissiveIntensity: 0.5,
+        shininess: 100
+    });
     spaceship = new THREE.Mesh(spaceshipGeometry, spaceshipMaterial);
     spaceship.position.z = 10;
     scene.add(spaceship);
 
     // Planet (goal)
     const planetGeometry = new THREE.SphereGeometry(2, 32, 32);
-    const planetMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff });
+    const planetMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x0000ff,
+        emissive: 0x0000ff,
+        emissiveIntensity: 0.2,
+        shininess: 50
+    });
     planet = new THREE.Mesh(planetGeometry, planetMaterial);
     planet.position.z = -50;
     scene.add(planet);
 
     // Asteroids
+    const asteroidGeometry = new THREE.IcosahedronGeometry(1, 0);
+    const asteroidMaterial = new THREE.MeshPhongMaterial({
+        color: 0x8B4513,
+        flatShading: true
+    });
+
     for (let i = 0; i < 50; i++) {
-        const asteroidGeometry = new THREE.SphereGeometry(Math.random() * 0.5 + 0.5, 32, 32);
-        const asteroidMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
         const asteroid = new THREE.Mesh(asteroidGeometry, asteroidMaterial);
         asteroid.position.set(
             Math.random() * 40 - 20,
             Math.random() * 40 - 20,
             Math.random() * -40 - 10
         );
+        asteroid.rotation.set(
+            Math.random() * Math.PI,
+            Math.random() * Math.PI,
+            Math.random() * Math.PI
+        );
+        asteroid.scale.setScalar(Math.random() * 0.5 + 0.5);
         asteroids.push(asteroid);
         scene.add(asteroid);
     }
@@ -66,6 +101,16 @@ function animate() {
             asteroid.rotation.y += 0.01;
         });
 
+        // Move stars
+        const positions = stars.geometry.attributes.position.array;
+        for (let i = 2; i < positions.length; i += 3) {
+            positions[i] += 0.1;
+            if (positions[i] > 0) {
+                positions[i] = -1000;
+            }
+        }
+        stars.geometry.attributes.position.needsUpdate = true;
+
         // Check for collisions
         asteroids.forEach(asteroid => {
             if (spaceship.position.distanceTo(asteroid.position) < 1) {
@@ -77,27 +122,44 @@ function animate() {
         // Check for reaching the planet
         if (spaceship.position.distanceTo(planet.position) < 3) {
             gameOver = true;
-            document.getElementById('info').innerHTML = 'You Win! Refresh to play again.';
+            document.getElementById('info').innerHTML = 'You Win! Humanity is saved! Refresh to play again.';
         }
 
         renderer.render(scene, camera);
     }
 }
 
-function onKeyDown(event) {
+function moveSpaceship(direction) {
     const speed = 0.5;
-    switch (event.key) {
-        case 'ArrowUp':
+    switch (direction) {
+        case 'up':
             spaceship.position.y += speed;
             break;
-        case 'ArrowDown':
+        case 'down':
             spaceship.position.y -= speed;
             break;
-        case 'ArrowLeft':
+        case 'left':
             spaceship.position.x -= speed;
             break;
-        case 'ArrowRight':
+        case 'right':
             spaceship.position.x += speed;
+            break;
+    }
+}
+
+function onKeyDown(event) {
+    switch (event.key) {
+        case 'ArrowUp':
+            moveSpaceship('up');
+            break;
+        case 'ArrowDown':
+            moveSpaceship('down');
+            break;
+        case 'ArrowLeft':
+            moveSpaceship('left');
+            break;
+        case 'ArrowRight':
+            moveSpaceship('right');
             break;
     }
 }
@@ -112,5 +174,30 @@ function onWindowResize() {
 
 window.addEventListener('resize', onWindowResize, false);
 
-init();
-animate();
+// Story widget and virtual keypad setup
+document.getElementById('dismiss-btn').addEventListener('click', function() {
+    document.getElementById('story-widget').style.display = 'none';
+    init();
+    animate();
+});
+
+// Virtual keypad setup
+const virtualKeypad = document.getElementById('virtual-keypad');
+const upBtn = document.getElementById('up-btn');
+const downBtn = document.getElementById('down-btn');
+const leftBtn = document.getElementById('left-btn');
+const rightBtn = document.getElementById('right-btn');
+
+function setupVirtualKeypad() {
+    virtualKeypad.style.display = 'block';
+    
+    upBtn.addEventListener('touchstart', () => moveSpaceship('up'));
+    downBtn.addEventListener('touchstart', () => moveSpaceship('down'));
+    leftBtn.addEventListener('touchstart', () => moveSpaceship('left'));
+    rightBtn.addEventListener('touchstart', () => moveSpaceship('right'));
+}
+
+// Check if it's a touch device
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0) {
+    setupVirtualKeypad();
+}

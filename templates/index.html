@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,22 +6,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Space Navigation Game</title>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Arial', sans-serif;
+            background-color: #000;
+        }
         canvas { display: block; }
         #info {
             position: absolute;
             top: 10px;
             width: 100%;
             text-align: center;
-            color: white;
-            font-family: Arial, sans-serif;
+            color: #fff;
+            text-shadow: 0 0 5px #00f, 0 0 10px #00f, 0 0 15px #00f;
+            font-size: 18px;
             pointer-events: none;
         }
+        #story-widget {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 50, 0.8);
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 80%;
+            text-align: center;
+            box-shadow: 0 0 20px #00f;
+        }
+        #dismiss-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #00f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        #dismiss-btn:hover {
+            background-color: #00a;
+            box-shadow: 0 0 10px #00f;
+        }
+        #virtual-keypad {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+        }
+        .keypad-btn {
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            font-size: 24px;
+            background-color: rgba(0, 0, 255, 0.3);
+            border: 2px solid #00f;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .keypad-btn:active {
+            background-color: rgba(0, 0, 255, 0.6);
+        }
     </style>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 </head>
 <body>
-    <div id="info">Navigate the spaceship to the planet. Avoid asteroids!<br>Use arrow keys to move.</div>
+    <div id="info">Navigate the spaceship to the planet. Avoid asteroids!<br>Use arrow keys or virtual keypad to move.</div>
+    <div id="story-widget">
+        <h2>Welcome, Space Cadet!</h2>
+        <p>The year is 2142. Earth's resources are depleted, and humanity's survival depends on reaching the mysterious Planet X. You've been chosen to pilot the experimental starship "Hope" through the treacherous Asteroid Belt. Can you navigate safely and secure our future?</p>
+        <button id="dismiss-btn">Start Mission</button>
+    </div>
+    <div id="virtual-keypad">
+        <button class="keypad-btn" id="up-btn">▲</button><br>
+        <button class="keypad-btn" id="left-btn">◀</button>
+        <button class="keypad-btn" id="down-btn">▼</button>
+        <button class="keypad-btn" id="right-btn">▶</button>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="game.js?v=3"></script>
 </body>
 </html>
