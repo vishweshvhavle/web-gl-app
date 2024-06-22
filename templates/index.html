@@ -23,34 +23,6 @@
             font-size: 18px;
             pointer-events: none;
         }
-        #story-widget {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 50, 0.8);
-            color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            max-width: 80%;
-            text-align: center;
-            box-shadow: 0 0 20px #00f;
-        }
-        #dismiss-btn {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background-color: #00f;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-        #dismiss-btn:hover {
-            background-color: #00a;
-            box-shadow: 0 0 10px #00f;
-        }
         #virtual-keypad {
             position: absolute;
             bottom: 20px;
@@ -80,11 +52,6 @@
 </head>
 <body>
     <div id="info">Navigate the spaceship to the planet. Avoid asteroids!<br>Use arrow keys or virtual keypad to move.</div>
-    <div id="story-widget">
-        <h2>Welcome, Space Cadet!</h2>
-        <p>The year is 2142. Earth's resources are depleted, and humanity's survival depends on reaching the mysterious Planet X. You've been chosen to pilot the experimental starship "Hope" through the treacherous Asteroid Belt. Can you navigate safely and secure our future?</p>
-        <button id="dismiss-btn">Start Mission</button>
-    </div>
     <div id="virtual-keypad">
         <button class="keypad-btn" id="up-btn">▲</button><br>
         <button class="keypad-btn" id="left-btn">◀</button>

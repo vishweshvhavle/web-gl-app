@@ -1,3 +1,4 @@
+// script.js
 let scene, camera, renderer, spaceship, planet, asteroids = [], stars = [];
 let gameOver = false;
 
@@ -174,13 +175,6 @@ function onWindowResize() {
 
 window.addEventListener('resize', onWindowResize, false);
 
-// Story widget and virtual keypad setup
-document.getElementById('dismiss-btn').addEventListener('click', function() {
-    document.getElementById('story-widget').style.display = 'none';
-    init();
-    animate();
-});
-
 // Virtual keypad setup
 const virtualKeypad = document.getElementById('virtual-keypad');
 const upBtn = document.getElementById('up-btn');
@@ -197,7 +191,127 @@ function setupVirtualKeypad() {
     rightBtn.addEventListener('touchstart', () => moveSpaceship('right'));
 }
 
-// Check if it's a touch device
+// Check if it's a touch device and set up virtual keypad if necessary
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0) {
+    setupVirtualKeypad();
+}
+
+// Initialize the game
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+    animate();
+});
+
+// Function to handle game over
+function gameOverMessage(message) {
+    gameOver = true;
+    document.getElementById('info').innerHTML = message + ' Refresh to play again.';
+}
+
+// Function to detect collisions with asteroids and planet
+function detectCollisions() {
+    // Check for collisions with asteroids
+    asteroids.forEach(asteroid => {
+        if (spaceship.position.distanceTo(asteroid.position) < 1) {
+            gameOverMessage('Game Over!');
+        }
+    });
+
+    // Check for reaching the planet
+    if (spaceship.position.distanceTo(planet.position) < 3) {
+        gameOverMessage('You Win! Humanity is saved!');
+    }
+}
+
+// Animation loop
+function animate() {
+    if (!gameOver) {
+        requestAnimationFrame(animate);
+
+        // Move spaceship towards the planet
+        spaceship.position.z -= 0.1;
+
+        // Rotate asteroids
+        asteroids.forEach(asteroid => {
+            asteroid.rotation.x += 0.01;
+            asteroid.rotation.y += 0.01;
+        });
+
+        // Move stars
+        const positions = stars.geometry.attributes.position.array;
+        for (let i = 2; i < positions.length; i += 3) {
+            positions[i] += 0.1;
+            if (positions[i] > 0) {
+                positions[i] = -1000;
+            }
+        }
+        stars.geometry.attributes.position.needsUpdate = true;
+
+        // Check for collisions
+        detectCollisions();
+
+        renderer.render(scene, camera);
+    }
+}
+
+// Function to move the spaceship based on keyboard input
+function moveSpaceship(direction) {
+    const speed = 0.5;
+    switch (direction) {
+        case 'up':
+            spaceship.position.y += speed;
+            break;
+        case 'down':
+            spaceship.position.y -= speed;
+            break;
+        case 'left':
+            spaceship.position.x -= speed;
+            break;
+        case 'right':
+            spaceship.position.x += speed;
+            break;
+    }
+}
+
+// Event listener for keyboard input
+function onKeyDown(event) {
+    switch (event.key) {
+        case 'ArrowUp':
+            moveSpaceship('up');
+            break;
+        case 'ArrowDown':
+            moveSpaceship('down');
+            break;
+        case 'ArrowLeft':
+            moveSpaceship('left');
+            break;
+        case 'ArrowRight':
+            moveSpaceship('right');
+            break;
+    }
+}
+
+window.addEventListener('keydown', onKeyDown);
+
+// Function to handle window resize
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+window.addEventListener('resize', onWindowResize, false);
+
+function setupVirtualKeypad() {
+    virtualKeypad.style.display = 'block';
+    
+    upBtn.addEventListener('touchstart', () => moveSpaceship('up'));
+    downBtn.addEventListener('touchstart', () => moveSpaceship('down'));
+    leftBtn.addEventListener('touchstart', () => moveSpaceship('left'));
+    rightBtn.addEventListener('touchstart', () => moveSpaceship('right'));
+}
+
+// Check if it's a touch device and set up virtual keypad if necessary
 if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0) {
     setupVirtualKeypad();
 }
