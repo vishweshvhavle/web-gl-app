@@ -103,3 +103,12 @@ def gui():
 
 socketio.run(app, debug=True, host='0.0.0.0', port=5000)
 
+from firebase_functions import https_fn
+from firebase_admin import initialize_app
+
+initialize_app()
+
+@https_fn.on_request()
+def app(request):
+    with app.request_context(request.environ):
+        return app.full_dispatch_request()
