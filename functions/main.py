@@ -1,3 +1,5 @@
+import firebase_functions as functions
+from firebase_admin import initialize_app
 from flask import Flask, render_template, request, session
 from flask_socketio import SocketIO, emit
 
@@ -10,6 +12,7 @@ import json
 data = [{'foo': [1, 2, 3, 4], 'fee': 'hello'}]
 data_json = json.dumps(data)
 
+initialize_app()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
@@ -91,7 +94,7 @@ def from_gui():
 # flask stuff
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return "Welcome to the FlaskTest application! Visit /viewer or /gui."
 
 @app.route("/viewer")
 def viewer():
@@ -103,12 +106,7 @@ def gui():
 
 socketio.run(app, debug=True, host='0.0.0.0', port=5000)
 
-from firebase_functions import https_fn
-from firebase_admin import initialize_app
-
-initialize_app()
-
-@https_fn.on_request()
-def app(request):
-    with app.request_context(request.environ):
+@functions.https_fn.on_request()
+def app_function(req: functions.Request) -> functions.Response:
+    with app.request_context(req.environ):
         return app.full_dispatch_request()
