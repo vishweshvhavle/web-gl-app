@@ -1,14 +1,18 @@
 {
   "hosting": {
-    "public": "templates", 
+    "public": ".",
     "ignore": [
+      "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
     "rewrites": [
       {
         "source": "**",
-        "function": "app"
+        "run": {
+          "serviceId": "web-gl-site",
+          "region": "africa-south1"
+        }
       }
     ]
   }
