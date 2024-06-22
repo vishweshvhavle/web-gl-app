@@ -11,7 +11,7 @@
         "source": "**",
         "run": {
           "serviceId": "web-gl-site",
-          "region": "africa-south1"
+          "region": "asia-east1"
         }
       }
     ]
