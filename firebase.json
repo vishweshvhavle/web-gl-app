@@ -8,6 +8,14 @@
     ],
     "rewrites": [
       {
+        "source": "/gui/**",
+        "function": "app"
+      },
+      {
+        "source": "/viewer/**",
+        "function": "app"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
