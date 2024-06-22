@@ -1,3 +1,4 @@
 flask
 flask-socketio
 firebase-admin
+firebase-functions
