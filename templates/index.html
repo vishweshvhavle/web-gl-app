@@ -5,20 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cosmic Dodger: Pixel Art Space Adventure</title>
     <style>
-        body, html {
-            margin: 0;
-            height: 100%;
+        body {
             font-family: 'Courier New', monospace;
-            background: #001c38;
+            background-color: #001c38;
             display: flex;
             justify-content: center;
             align-items: center;
+            height: 100vh;
+            margin: 0;
             color: #fff;
             overflow: hidden;
+            background-image: 
+                radial-gradient(#ffffff 1px, transparent 1px),
+                radial-gradient(#ffffff 1px, transparent 1px);
+            background-size: 50px 50px;
+            background-position: 0 0, 25px 25px;
+            animation: twinkling 10s infinite linear;
+        }
+        @keyframes twinkling {
+            from { background-position: 0 0, 25px 25px; }
+            to { background-position: -50px -50px, -25px -25px; }
         }
         .game-container {
             text-align: center;
             position: relative;
+            background-color: rgba(0, 28, 56, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            width: 100%;
+            height: 100%;
+            max-width: 1000px;
+            max-height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
         .game-title {
             font-size: 24px;
@@ -28,16 +50,22 @@
         .score-board {
             display: flex;
             justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
             margin-bottom: 10px;
+        }
+        .score {
             font-size: 18px;
         }
         #game-canvas {
             border: 2px solid #fff;
             cursor: none;
+            width: 100%;
+            height: 80%;
         }
         #start-button {
             position: absolute;
-            bottom: 60px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             background: none;
@@ -49,8 +77,12 @@
             animation: glow 1.5s ease-in-out infinite alternate;
         }
         @keyframes glow {
-            from { text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff; }
-            to { text-shadow: 0 0 20px #00ffff, 0 0 30px #00ffff, 0 0 40px #00ffff; }
+            from {
+                text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff;
+            }
+            to {
+                text-shadow: 0 0 20px #00ffff, 0 0 30px #00ffff, 0 0 40px #00ffff;
+            }
         }
     </style>
 </head>
@@ -58,10 +90,10 @@
     <div class="game-container">
         <div class="game-title">Cosmic Dodger</div>
         <div class="score-board">
-            <div>High Score: <span id="high-score">0</span></div>
-            <div>Score: <span id="current-score">0</span></div>
+            <div class="score">High Score: <span id="high-score">0</span></div>
+            <div class="score">Score: <span id="current-score">0</span></div>
         </div>
-        <canvas id="game-canvas" width="400" height="600"></canvas>
+        <canvas id="game-canvas"></canvas>
         <button id="start-button">START</button>
     </div>
 
@@ -72,90 +104,161 @@
         const currentScoreElement = document.getElementById('current-score');
         const startButton = document.getElementById('start-button');
 
-        let highScore = 0, currentScore = 0, gameSpeed = 3, gameFrame = 0, gameActive = false;
-        const rocket = { x: canvas.width / 2 - 15, y: canvas.height - 50, width: 30, height: 40 };
-        const stars = [], obstacles = [];
+        let highScore = 0;
+        let currentScore = 0;
+        let gameSpeed = 3; // Increased initial game speed
+        let gameFrame = 0;
+        let gameActive = false;
+
+        // Set canvas size to match device screen size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight * 0.8; // Adjust as needed
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game objects
+        const rocket = {
+            x: canvas.width / 2 - 15,
+            y: canvas.height - 50,
+            width: 30,
+            height: 40,
+            speed: 5
+        };
+
+        const stars = [];
+        const obstacles = [];
         const planets = [
             {x: 250, y: 550, radius: 60, type: 'earth', angle: 0, speed: 0.002},
             {x: 150, y: 50, radius: 40, type: 'mars', angle: Math.PI, speed: 0.003}
         ];
 
-        const colorMaps = {
-            rocket: { r: '#ff6b6b', R: '#ff4757', W: '#ffffff', o: '#feca57' },
-            asteroid: { g: '#7f8c8d', G: '#95a5a6' },
-            comet: { b: '#48dbfb', B: '#0abde3', W: '#ffffff' },
-            earth: { B: '#2980b9', b: '#3498db', G: '#27ae60' },
-            mars: { R: '#c0392b', r: '#e74c3c' }
-        };
+        // Event listeners
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            rocket.x = e.clientX - rect.left - rocket.width / 2;
+        });
 
-        function drawPixelArt(x, y, pixelSize, colorArray, colorMap) {
-            colorArray.forEach((row, i) => {
-                row.forEach((pixel, j) => {
-                    if (pixel !== 'x') {
-                        ctx.fillStyle = colorMap[pixel];
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            rocket.x = e.touches[0].clientX - rect.left - rocket.width / 2;
+        });
+
+        startButton.addEventListener('click', startGame);
+
+        // Functions
+        function drawPixelArt(x, y, pixelSize, colorArray) {
+            for (let i = 0; i < colorArray.length; i++) {
+                for (let j = 0; j < colorArray[i].length; j++) {
+                    if (colorArray[i][j] !== 'x') {
+                        ctx.fillStyle = colorArray[i][j];
                         ctx.fillRect(x + j * pixelSize, y + i * pixelSize, pixelSize, pixelSize);
                     }
-                });
-            });
+                }
+            }
         }
 
-        function drawObject(object, pixelArray, colorMap, pixelSize) {
-            drawPixelArt(object.x, object.y, pixelSize, pixelArray, colorMap);
-        }
-
-        const objectPixels = {
-            rocket: [
+        function drawRocket() {
+            const rocketPixels = [
                 ['x','x','r','x','x'],
                 ['x','r','R','r','x'],
                 ['r','R','W','R','r'],
                 ['R','W','W','W','R'],
                 ['R','W','W','W','R'],
                 ['x','o','x','o','x']
-            ],
-            asteroid: [
-                ['x','g','G','x'],
-                ['g','G','G','g'],
-                ['G','G','g','G'],
-                ['x','G','g','x']
-            ],
-            comet: [
-                ['x','x','b','B','x','x'],
-                ['x','b','B','B','b','x'],
-                ['b','B','W','B','B','b'],
-                ['B','W','W','W','B','B'],
-                ['B','W','W','W','B','B'],
-                ['x','B','B','B','B','x']
-            ],
-            earth: [
-                ['x','x','B','B','B','B','x','x'],
-                ['x','B','b','b','b','b','B','x'],
-                ['B','b','G','b','G','G','b','B'],
-                ['B','b','G','G','b','G','b','B'],
-                ['B','b','G','G','G','b','b','B'],
-                ['B','b','b','G','G','G','b','B'],
-                ['x','B','b','b','b','b','B','x'],
-                ['x','x','B','B','B','B','x','x']
-            ],
-            mars: [
-                ['x','x','R','R','R','x','x'],
-                ['x','R','r','r','r','R','x'],
-                ['R','r','r','r','r','r','R'],
-                ['R','r','r','r','r','r','R'],
-                ['R','r','r','r','r','r','R'],
-                ['x','R','r','r','r','R','x'],
-                ['x','x','R','R','R','x','x']
-            ]
-        };
+            ];
+            const colorMap = {
+                'r': '#ff6b6b',
+                'R': '#ff4757',
+                'W': '#ffffff',
+                'o': '#feca57'
+            };
+            drawPixelArt(rocket.x, rocket.y, 6, rocketPixels.map(row => row.map(pixel => colorMap[pixel] || 'x')));
+        }
 
         function drawStar(star) {
             ctx.fillStyle = star.color;
             ctx.fillRect(star.x, star.y, star.size, star.size);
         }
 
+        function drawObstacle(obstacle) {
+            if (obstacle.type === 'asteroid') {
+                const asteroidPixels = [
+                    ['x','g','G','x'],
+                    ['g','G','G','g'],
+                    ['G','G','g','G'],
+                    ['x','G','g','x']
+                ];
+                const colorMap = {
+                    'g': '#7f8c8d',
+                    'G': '#95a5a6'
+                };
+                drawPixelArt(obstacle.x, obstacle.y, 6, asteroidPixels.map(row => row.map(pixel => colorMap[pixel] || 'x')));
+            } else if (obstacle.type === 'comet') {
+                const cometPixels = [
+                    ['x','x','b','B','x','x'],
+                    ['x','b','B','B','b','x'],
+                    ['b','B','W','B','B','b'],
+                    ['B','W','W','W','B','B'],
+                    ['B','W','W','W','B','B'],
+                    ['x','B','B','B','B','x']
+                ];
+                const colorMap = {
+                    'b': '#48dbfb',
+                    'B': '#0abde3',
+                    'W': '#ffffff'
+                };
+                drawPixelArt(obstacle.x, obstacle.y, 6, cometPixels.map(row => row.map(pixel => colorMap[pixel] || 'x')));
+            }
+        }
+
         function drawPlanet(planet) {
             const centerX = planet.x + Math.cos(planet.angle) * 20;
             const centerY = planet.y + Math.sin(planet.angle) * 20;
-            drawPixelArt(centerX - planet.radius, centerY - planet.radius, planet.radius / (planet.type === 'earth' ? 4 : 3.5), objectPixels[planet.type], colorMaps[planet.type]);
+
+            if (planet.type === 'earth') {
+                const earthPixels = [
+                    ['x','x','B','B','B','B','x','x'],
+                    ['x','B','b','b','b','b','B','x'],
+                    ['B','b','G','b','G','G','b','B'],
+                    ['B','b','G','G','b','G','b','B'],
+                    ['B','b','G','G','G','b','b','B'],
+                    ['B','b','b','G','G','G','b','B'],
+                    ['x','B','b','b','b','b','B','x'],
+                    ['x','x','B','B','B','B','x','x']
+                ];
+                const colorMap = {
+                    'B': '#2980b9',
+                    'b': '#3498db',
+                    'G': '#27ae60'
+                };
+                drawPixelArt(centerX - planet.radius, centerY - planet.radius, planet.radius / 4, earthPixels.map(row => row.map(pixel => colorMap[pixel] || 'x')));
+            } else if (planet.type === 'mars') {
+                const marsPixels = [
+                    ['x','x','R','R','R','x','x'],
+                    ['x','R','r','r','r','R','x'],
+                    ['R','r','r','r','r','r','R'],
+                    ['R','r','r','r','r','r','R'],
+                    ['R','r','r','r','r','r','R'],
+                    ['x','R','r','r','r','R','x'],
+                    ['x','x','R','R','R','x','x']
+                ];
+                const colorMap = {
+                    'R': '#c0392b',
+                    'r': '#e74c3c'
+                };
+                drawPixelArt(centerX - planet.radius, centerY - planet.radius, planet.radius / 3.5, marsPixels.map(row => row.map(pixel => colorMap[pixel] || 'x')));
+            }
+        }
+
+        function drawNebula() {
+            const gradient = ctx.createRadialGradient(200, 300, 50, 200, 300, 300);
+            gradient.addColorStop(0, 'rgba(155, 89, 182, 0.2)');
+            gradient.addColorStop(1, 'rgba(155, 89, 182, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
         function createStar() {
@@ -169,7 +272,7 @@
         }
 
         function createObstacle() {
-            const isComet = Math.random() < 0.3;
+            const isComet = Math.random() < 0.3; // Increased chance of spawning a comet
             obstacles.push({
                 x: Math.random() * (canvas.width - (isComet ? 36 : 24)),
                 y: 0,
@@ -183,15 +286,19 @@
         function updateGameState() {
             if (!gameActive) return;
 
-            stars.forEach((star, index) => {
-                star.y += star.speed;
-                if (star.y > canvas.height) stars.splice(index, 1);
-            });
+            // Update stars
+            for (let i = stars.length - 1; i >= 0; i--) {
+                stars[i].y += stars[i].speed;
+                if (stars[i].y > canvas.height) {
+                    stars.splice(i, 1);
+                }
+            }
 
-            obstacles.forEach((obstacle, index) => {
-                obstacle.y += obstacle.speed;
-                if (obstacle.y > canvas.height) {
-                    obstacles.splice(index, 1);
+            // Update obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].y += obstacles[i].speed;
+                if (obstacles[i].y > canvas.height) {
+                    obstacles.splice(i, 1);
                     currentScore++;
                     currentScoreElement.textContent = currentScore;
                     if (currentScore > highScore) {
@@ -200,19 +307,26 @@
                     }
                 }
 
+                // Check collision
                 if (
-                    rocket.x < obstacle.x + obstacle.width &&
-                    rocket.x + rocket.width > obstacle.x &&
-                    rocket.y < obstacle.y + obstacle.height &&
-                    rocket.y + rocket.height > obstacle.y
+                    rocket.x < obstacles[i].x + obstacles[i].width &&
+                    rocket.x + rocket.width > obstacles[i].x &&
+                    rocket.y < obstacles[i].y + obstacles[i].height &&
+                    rocket.y + rocket.height > obstacles[i].y
                 ) {
                     gameOver();
                 }
+            }
+
+            // Update planet positions
+            planets.forEach(planet => {
+                planet.angle += planet.speed;
             });
 
-            planets.forEach(planet => planet.angle += planet.speed);
-
-            if (gameFrame % 300 === 0) gameSpeed += 0.5;
+            // Increase difficulty
+            if (gameFrame % 300 === 0) { // Increased difficulty ramp-up
+                gameSpeed += 0.5;
+            }
         }
 
         function gameOver() {
@@ -228,7 +342,7 @@
 
         function startGame() {
             currentScore = 0;
-            gameSpeed = 3;
+            gameSpeed = 3; // Increased initial game speed
             gameFrame = 0;
             obstacles.length = 0;
             currentScoreElement.textContent = currentScore;
@@ -241,42 +355,28 @@
             ctx.fillStyle = '#001c38';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const gradient = ctx.createRadialGradient(200, 300, 50, 200, 300, 300);
-            gradient.addColorStop(0, 'rgba(155, 89, 182, 0.2)');
-            gradient.addColorStop(1, 'rgba(155, 89, 182, 0)');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+            drawNebula();
             planets.forEach(drawPlanet);
 
             if (gameFrame % 10 === 0) createStar();
             stars.forEach(drawStar);
 
-            if (gameActive && gameFrame % 40 === 0) createObstacle();
-            obstacles.forEach(obstacle => drawObject(obstacle, objectPixels[obstacle.type], colorMaps[obstacle.type], 6));
+            if (gameActive && gameFrame % 40 === 0) createObstacle(); // Increased obstacle spawn rate
+            obstacles.forEach(drawObstacle);
 
-            drawObject(rocket, objectPixels.rocket, colorMaps.rocket, 6);
+            drawRocket();
             updateGameState();
 
             gameFrame++;
-            if (gameActive) requestAnimationFrame(gameLoop);
+            if (gameActive) {
+                requestAnimationFrame(gameLoop);
+            }
         }
 
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            rocket.x = e.clientX - rect.left - rocket.width / 2;
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            rocket.x = e.touches[0].clientX - rect.left - rocket.width / 2;
-        });
-
-        startButton.addEventListener('click', startGame);
-
+        // Initial setup
         planets.forEach(drawPlanet);
-        drawObject(rocket, objectPixels.rocket, colorMaps.rocket, 6);
+        drawNebula();
+        drawRocket();
     </script>
 </body>
 </html>
